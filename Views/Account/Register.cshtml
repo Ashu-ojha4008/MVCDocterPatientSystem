@@ -1,0 +1,247 @@
+﻿@model MVCDocterPatientSystem.Models.RegisterViewModel
+
+@{
+    ViewBag.Title = "Register";
+}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link href="~/Content/bootstrap.min.css" rel="stylesheet" />
+
+<link href="~/Content/bootstrap.css" rel="stylesheet" />
+@*<link href="~/Content/Theme/AdminLTE-3.2.0/plugins/datatables-bs4/css/dataTables.bootstrap4.css" rel="stylesheet" />*@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+@*<script src="~/Scripts/jquery-3.7.1.min.js"></script>
+    <script src="~/Scripts/jquery-3.7.1.js"></script>*@
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
+<script>
+    $(document).ready(function () {
+        var input = document.querySelector("#PhoneNumber");
+        var iti = window.intlTelInput(input, {
+            initialCountry: "auto",
+            geoIpLookup: function (callback) {
+                $.get('https://ipinfo.io', function () { }, "jsonp").always(function (resp) {
+                    var countryCode = (resp && resp.country) ? resp.country : "";
+                    callback(countryCode);
+                });
+            },
+            utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"
+        });
+
+        // Ensure the full number is sent with the form
+        //$('form').submit(function () {
+
+        //    var fullNumber = iti.getNumber();
+        //    $('#PhoneNumber').val(fullNumber);
+        //});
+         $('form').submit(function (event) {
+             //event.preventDefault();  // Prevent the default form submission
+
+             // Get the full phone number
+             var fullNumber = iti.getNumber();
+             $('#PhoneNumber').val(fullNumber);  // Set the phone number field with the full number
+
+             // Serialize form data
+             var formData = $(this).serialize();
+             console.log("formData", formData);
+             // Send the AJAX request
+             $.ajax({
+                 url: '@Url.Action("Register", "Account")', // Adjust the URL as necessary
+                 type: 'POST',
+                 data: formData,
+                 success: function (response) {
+                     if (response.success) {
+                         alert("Registration success: " + response.success);
+                         // Redirect or display success message
+                         window.location.href = response.redirectUrl;  // Adjust according to your response
+                     } else {
+                         // Display errors
+                         alert("Registration failed: " + response.message);  // Display a failure message
+                     }
+                 },
+                 error: function (xhr, status, error) {
+                     // Handle errors
+                     alert("An error occurred. Please try again.");
+                 }
+             });
+         });
+
+        //$(document).on('submit', 'form', function (event) {
+        //    event.preventDefault(); // Prevent the default form submission
+        //    var fullNumber = iti.getNumber();
+        //    $('#PhoneNumber').val(fullNumber);
+        //    // Add your form submission logic here
+        //});
+    });</script>
+
+<style>
+    .form-group {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        /*  background: linear-gradient(135deg, #ff7e5f, #feb47b);*/
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+        .form-group label {
+            flex: 0 0 150px;
+            margin-bottom: 0;
+        }
+
+        .form-group .col-md-10 {
+            flex: 1;
+        }
+
+    .form-control {
+        width: 100%;
+    }
+
+    .text-danger {
+        color: #dc3545;
+    }
+
+    .btn-outline-dark {
+        margin-top: 20px;
+    }
+
+    .radio-large input[type="radio"] {
+        transform: scale(1.5); /* Increase the size */
+        margin-right: 10px; /* Optional: Add some spacing */
+    }
+</style>
+
+
+@*<script>
+        $(document).ready(function () {
+            $("#phone").countrySelect({
+                // Set default country if needed
+                defaultCountry: "us",
+
+                // Update hidden input with selected country code
+                onSelect: function (countryData) {
+                    $("#country_code").val(countryData.iso2); // Update hidden input with ISO code
+                }
+            });
+        });
+    </script>*@
+
+
+<main aria-labelledby="title">
+    <h2 id="title">@ViewBag.Title.</h2>
+
+    @using (Html.BeginForm("Register", "Account", FormMethod.Post, new { enctype = "multipart/form-data", @class = "form-horizontal" }))
+    {
+        @Html.AntiForgeryToken()
+        <h4>Create a new account.</h4>
+        <hr />
+        @Html.ValidationSummary("", new { @class = "text-danger" })
+        <div class="form-group">
+            @Html.LabelFor(model => model.FirstName, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.FirstName, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.FirstName, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.LastName, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.LastName, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.LastName, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.PhoneNumber, new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.TextBoxFor(m => m.PhoneNumber, new { @id = "PhoneNumber", @class = "form-control", style = "width: 150%;" })
+                <br />
+                @Html.ValidationMessageFor(m => m.PhoneNumber, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.DateOfBirth, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.TextBoxFor(m => m.DateOfBirth, "{0:yyyy-MM-dd}", new { @class = "form-control", type = "date" })
+                @Html.ValidationMessageFor(m => m.DateOfBirth, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.Gender, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10 radio-large">
+                <label class="radio-inline">
+                    @Html.RadioButtonFor(m => m.Gender, "Male", new { @class = "" }) Male
+                </label>
+                &nbsp;&nbsp;&nbsp;
+                <label class="radio-inline">
+                    @Html.RadioButtonFor(m => m.Gender, "Female", new { @class = "" }) Female
+                </label><br />
+                @Html.ValidationMessageFor(m => m.Gender, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+
+        @*<div class="form-group">
+                @Html.LabelFor(m => m.Gender, new { @class = "col-md-2 control-label" })
+                <div class="col-md-10">
+                    @Html.DropDownListFor(m => m.Gender, new SelectList(new[] { "Male", "Female" }), "-- Select Gender --", new { @class = "form-control" })
+                    @Html.ValidationMessageFor(m => m.Gender, "", new { @class = "text-danger" })
+                </div>
+            </div>*@
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.History, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.TextBoxFor(m => m.History, new { @class = "form-control" })
+                @*@Html.ValidationMessageFor(m => m.History, "", new { @class = "text-danger" })*@
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.Email, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.TextBoxFor(m => m.Email, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        @*<div class="form-group">
+                @Html.LabelFor(m => m.Image, new { @class = "col-md-2 control-label" })
+                <div class="col-md-10">
+                    <input type="file" name="ImageFile" id="ImageFile" class="form-control" />
+                    @Html.ValidationMessageFor(m => m.Image, "", new { @class = "text-danger" })
+                </div>
+            </div>*@
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.Password, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.PasswordFor(m => m.Password, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.ConfirmPassword, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.PasswordFor(m => m.ConfirmPassword, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.ConfirmPassword, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="offset-md-2 col-md-10">
+                <input type="submit" value="Register" class="btn btn-outline-dark" />
+            </div>
+        </div>
+    }
+</main>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

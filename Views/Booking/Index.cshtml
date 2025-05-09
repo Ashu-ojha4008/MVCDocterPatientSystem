@@ -1,0 +1,232 @@
+﻿@model IEnumerable<MVCDocterPatientSystem.Models.Appointment>
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking List</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.4/css/jquery.dataTables.min.css">
+    <!-- Moment.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+    <!-- Tempus Dominus Bootstrap 4 (DateTimePicker) CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/css/tempusdominus-bootstrap-4.min.css" />
+
+    <!-- Include SweetAlert2 CSS and JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+
+</head>
+<body>
+
+    <div class="container">
+        <h2>Appointment List</h2>
+
+        <!-- Button to trigger modal -->
+        <p>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createAppointmentModal">
+                Book an Appointment
+            </button>
+        </p>
+
+        <!-- Appointment List Table -->
+        <table class="table" id="example2">
+            @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+            <thead>
+                <tr>
+                    <th>Patient Name</th>
+                    <th>Appointment Date</th>
+                    @*<th>Time Slot</th>*@
+                    <th>Reason</th>
+                    <th>Patient Email</th>
+                    <th>Patient Phone</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var booking in Model)
+                {
+                    <tr>
+                        <td>@booking.PatientInfo.FirstName @booking.PatientInfo.LastName</td>
+                        <td>@booking.AppointmentDateTime</td>
+                        @*<td>@booking.Time</td>*@
+                        <td>@booking.Reason</td>
+                        <td>@booking.PatientInfo.ApplicationUser.Email</td>
+                        <td>@booking.PatientInfo.ApplicationUser.PhoneNumber</td>
+                        <td>@booking.Status</td>
+                        <td>
+                            @if (booking.Status == "Pending" || booking.Status == "Booked")
+                            {
+                                @Html.ActionLink("Edit", "Edit", "Booking", new { id = booking.appointmentId }, new { @class = "btn btn-primary" })
+                            }
+                            else if (booking.Status == "Completed")
+                            {
+                                <button class="btn btn-primary" disabled>Edit</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+
+        </table>
+    </div>
+    <!-- Hidden fields for messages -->
+    <!--<input type="hidden" id="errorMessage" value="@ViewBag.ErrorMessage" />
+    <input type="hidden" id="successMessage" value="@TempData["SuccessMessage"]" />-->
+
+    <input type="hidden" id="patientName" value="@ViewBag.PatientName" />
+    <input type="hidden" id="patientEmail" value="@ViewBag.PatientEmail" />
+    <input type="hidden" id="patientPhone" value="@ViewBag.PatientPhone" />
+
+    <!-- Modal for Creating/Editing Appointment -->
+    <div class="modal fade" id="createAppointmentModal" tabindex="-1" role="dialog" aria-labelledby="createAppointmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createAppointmentModalLabel">Book An Appointment</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="bookingForm">
+                    <span id="globalError" class="text-danger"></span>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="patientName">Patient Name:</label>
+                            <input type="text" class="form-control" id="patientName" name="patientName" value="@ViewBag.PatientName" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="patientEmail">Email:</label>
+                            <input type="email" class="form-control" id="patientEmail" name="patientEmail" value="@ViewBag.PatientEmail" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="patientPhone">Phone:</label>
+                            <input type="text" class="form-control" id="patientPhone" name="patientPhone" value="@ViewBag.PatientPhone" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="appointmentDateTime">Choose Appointment Date and Time:</label>
+                            <div class="input-group date" id="datetimepicker1" data-target-input="nearest">
+                                <input type="text" id="appointmentDateTime" name="AppointmentDateTime" class="form-control datetimepicker-input" data-target="#datetimepicker1" />
+                                <div class="input-group-append" data-target="#datetimepicker1" data-toggle="datetimepicker">
+                                    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="text-danger" id="appointmentDateTimeError"></span>
+                        <div class="form-group">
+                            <label for="bookingReason">Reason for Booking:</label>
+                            <textarea class="form-control" id="bookingReason" name="bookingReason" rows="3" placeholder="Reason of Booking.." required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <input id="btnSubmit" type="submit" value="Submit" class="btn btn-primary" />
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <!-- Moment.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+    <!-- Tempus Dominus Bootstrap 4 (DateTimePicker) JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/js/tempusdominus-bootstrap-4.min.js"></script>
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js"></script>
+
+    <!-- Initialize DataTables -->
+    <script>
+        $(document).ready(function () {
+            $('#example2').DataTable();
+
+           
+        });
+    </script>
+
+    <!-- Initialize DateTimePicker -->
+    <script type="text/javascript">
+        $(function () {
+            $('#datetimepicker1').datetimepicker({
+                format: 'YYYY-MM-DD hh:mm A',  // Adjust format as needed
+                icons: {
+                    time: 'fa fa-clock',
+                    date: 'fa fa-calendar',
+                    up: 'fa fa-chevron-up',
+                    down: 'fa fa-chevron-down',
+                    previous: 'fa fa-chevron-left',
+                    next: 'fa fa-chevron-right',
+                    today: 'fa fa-calendar-check-o',
+                    clear: 'fa fa-trash',
+                    close: 'fa fa-times'
+                },
+                sideBySide: true 
+
+            });
+
+        // Handling form submission via AJAX
+        $('#bookingForm').on('submit', function (e) {
+            e.preventDefault();
+
+            var selectedDateTime = $('#datetimepicker1').find("input").val();
+            var dateTime = moment(selectedDateTime, 'YYYY-MM-DD HH:mm');
+            var isValidTime = dateTime.minute() === 0 && dateTime.second() === 0 && dateTime.millisecond() === 0;
+
+            if (!isValidTime) {
+                $('#appointmentDateTimeError').text("Appointments must start on the hour (e.g., 9:00 AM, 10:00 AM).");
+                return;
+            }
+            else {
+                $('#appointmentDateTimeError').text("");
+            }
+
+
+            var formData = {
+                AppointmentDateTime: $('#datetimepicker1').find("input").val(),  // Use proper field name based on your model
+                // Add other form fields as needed
+                Reason: $('#bookingReason').val(),
+                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+            };
+
+            $.ajax({
+                url: '@Url.Action("Create", "Booking")',  
+                type: 'POST',
+                data: formData,
+                success: function (response) {
+                    $('#createAppointmentModal').modal('hide');
+                    location.reload();  // Reload the page or update UI as needed
+                },
+
+                error: function (xhr, status, error) {
+                    alert('Error: ' + xhr.responseText);  // Display error message if AJAX request fails
+                }
+            });
+        });
+    });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,132 @@
+﻿@{
+    ViewBag.Title = "Appointments";
+}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/css/tempusdominus-bootstrap-4.min.css" />
+<script src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.4/js/dataTables.bootstrap4.min.js"></script>
+<link href="https://cdn.datatables.net/1.11.4/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+
+<div class="d-flex justify-content-between align-items-center">
+    <h2>Appointments</h2>
+    <a href="@Url.Action("CalendarView", "Doctor")" class="btn btn-primary">Switch to Calendar View</a>
+</div>
+
+<br />
+
+<table id="appointmentsTable" class="table table-bordered">
+    <thead>
+        <tr>
+            <th>DateTime</th>
+            <th>Reason</th>
+            <th>Patient</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Actions</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+<div class="modal fade" id="patientDetailsModal" tabindex="-1" role="dialog" aria-labelledby="patientDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="patientDetailsModalLabel">Patient Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="patientInfo">
+                    <p><strong>Name:</strong> <span id="patientName"></span></p>
+                    <p><strong>Email:</strong> <span id="patientEmail"></span></p>
+                    <p><strong>Phone Number:</strong> <span id="patientPhone"></span></p>
+                    <p><strong>Medical History:</strong></p>
+                    <p id="patientMedicalHistory"></p>
+                    <p><strong>Picture:</strong></p>
+                    <img id="patientPicture" src="" alt="Patient Picture" style="max-width: 100%; height: auto;" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#appointmentsTable').DataTable({
+                "ajax": {
+                    "url": '@Url.Action("GetAppointments", "ModelBindingDT")',
+                    "dataSrc": "data"
+                },
+                "columns": [
+                    { "data": "AppointmentDateTime" },
+                    { "data": "Reason" },
+                    { "data": "PatientName" },
+                    { "data": "Email" },
+                    { "data": "Status" },
+                    {
+                        "data": null,
+                        "render": function (data, type, row) {
+                            if (row.Status === "Pending") {
+                                return `
+                                    <form action="/Doctor/ChangeStatus" method="post">
+                                        <input name="__RequestVerificationToken" type="hidden" value="${$('input[name="__RequestVerificationToken"]').val()}" />
+                                        <input type="hidden" name="id" value="${row.AppointmentId}" />
+                                        <button type="submit" name="status" value="Approve" class="btn btn-success">Approve</button>
+                                        <button type="submit" name="status" value="Reject" class="btn btn-danger">Reject</button>
+                                    </form>`;
+                            } else if (row.Status === "Approved") {
+                                return `
+                                    <form action="/Doctor/ChangeStatus" method="post">
+                                        <input name="__RequestVerificationToken" type="hidden" value="${$('input[name="__RequestVerificationToken"]').val()}" />
+                                        <input type="hidden" name="id" value="${row.AppointmentId}" />
+                                        <button type="submit" name="status" value="Complete" class="btn btn-primary">Complete</button>
+                                    </form>`;
+                            } else {
+                                return '';
+                            }
+                        }
+                    },
+                    {
+                        "data": null,
+                        "render": function (data, type, row) {
+                            return `<button class="btn btn-info" data-toggle="modal" data-target="#patientDetailsModal" data-booking-id="${row.AppointmentId}">More Info</button>`;
+                        }
+                    }
+                ]
+            });
+
+            $('#patientDetailsModal').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget);
+                var bookingId = button.data('booking-id');
+
+                $.ajax({
+                    url: '@Url.Action("GetPatientDetails", "Doctor")',
+                    type: 'GET',
+                    data: { id: bookingId },
+                    success: function (data) {
+                        $('#patientName').text(data.FirstName + ' ' + data.LastName);
+                        $('#patientEmail').text(data.Email);
+                        $('#patientPhone').text(data.PhoneNumber);
+                        $('#patientMedicalHistory').text(data.History);
+                        var base64String = btoa(String.fromCharCode.apply(null, data.Image));
+                        $('#patientPicture').attr('src', 'data:image/jpeg;base64,' + base64String);
+                    },
+                    error: function () {
+                        alert('Error retrieving patient details.');
+                    }
+                });
+            });
+        });
+    </script>
+}
